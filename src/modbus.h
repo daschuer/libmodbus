@@ -1,5 +1,5 @@
 /*
- * Copyright © 2001-2011 Stéphane Raimbault <stephane.raimbault@gmail.com>
+ * Copyright © 2001-2013 Stéphane Raimbault <stephane.raimbault@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,10 +26,8 @@
 
 #ifndef _MSC_VER
 #include <stdint.h>
-#include <sys/time.h>
 #else
 #include "stdint.h"
-#include <time.h>
 #endif
 
 #include "modbus-version.h"
@@ -70,6 +68,20 @@ MODBUS_BEGIN_DECLS
 #ifndef ON
 #define ON 1
 #endif
+
+/* Modbus function codes */
+#define MODBUS_FC_READ_COILS                0x01
+#define MODBUS_FC_READ_DISCRETE_INPUTS      0x02
+#define MODBUS_FC_READ_HOLDING_REGISTERS    0x03
+#define MODBUS_FC_READ_INPUT_REGISTERS      0x04
+#define MODBUS_FC_WRITE_SINGLE_COIL         0x05
+#define MODBUS_FC_WRITE_SINGLE_REGISTER     0x06
+#define MODBUS_FC_READ_EXCEPTION_STATUS     0x07
+#define MODBUS_FC_WRITE_MULTIPLE_COILS      0x0F
+#define MODBUS_FC_WRITE_MULTIPLE_REGISTERS  0x10
+#define MODBUS_FC_REPORT_SLAVE_ID           0x11
+#define MODBUS_FC_MASK_WRITE_REGISTER       0x16
+#define MODBUS_FC_WRITE_AND_READ_REGISTERS  0x17
 
 #define MODBUS_BROADCAST_ADDRESS    0
 
@@ -160,11 +172,11 @@ MODBUS_API int modbus_set_error_recovery(modbus_t *ctx, modbus_error_recovery_mo
 MODBUS_API int modbus_set_socket(modbus_t *ctx, int s);
 MODBUS_API int modbus_get_socket(modbus_t *ctx);
 
-MODBUS_API int modbus_get_response_timeout(modbus_t *ctx, struct timeval *timeout);
-MODBUS_API int modbus_set_response_timeout(modbus_t *ctx, const struct timeval *timeout);
+MODBUS_API int modbus_get_response_timeout(modbus_t *ctx, long *to_sec, long *to_usec);
+MODBUS_API int modbus_set_response_timeout(modbus_t *ctx, long to_sec, long to_usec);
 
-MODBUS_API int modbus_get_byte_timeout(modbus_t *ctx, struct timeval *timeout);
-MODBUS_API int modbus_set_byte_timeout(modbus_t *ctx, const struct timeval *timeout);
+MODBUS_API int modbus_get_byte_timeout(modbus_t *ctx, long *to_sec, long *to_usec);
+MODBUS_API int modbus_set_byte_timeout(modbus_t *ctx, long to_sec, long to_usec);
 
 MODBUS_API int modbus_get_header_length(modbus_t *ctx);
 
@@ -188,8 +200,8 @@ MODBUS_API int modbus_write_bits(modbus_t *ctx, int addr, int nb, const uint8_t 
 MODBUS_API int modbus_write_registers(modbus_t *ctx, int addr, int nb, const uint16_t *data);
 MODBUS_API int modbus_mask_write_register(modbus_t *ctx, int addr, uint16_t and_mask, uint16_t or_mask);
 MODBUS_API int modbus_write_and_read_registers(modbus_t *ctx, int write_addr, int write_nb,
-                                           const uint16_t *src, int read_addr, int read_nb,
-                                           uint16_t *dest);
+                                               const uint16_t *src, int read_addr, int read_nb,
+                                               uint16_t *dest);
 MODBUS_API int modbus_report_slave_id(modbus_t *ctx, uint8_t *dest);
 
 MODBUS_API modbus_mapping_t* modbus_mapping_new(int nb_bits, int nb_input_bits,
@@ -204,9 +216,9 @@ MODBUS_API int modbus_receive_from(modbus_t *ctx, int sockfd, uint8_t *req);
 MODBUS_API int modbus_receive_confirmation(modbus_t *ctx, uint8_t *rsp);
 
 MODBUS_API int modbus_reply(modbus_t *ctx, const uint8_t *req,
-                        int req_length, modbus_mapping_t *mb_mapping);
+                            int req_length, modbus_mapping_t *mb_mapping);
 MODBUS_API int modbus_reply_exception(modbus_t *ctx, const uint8_t *req,
-                                  unsigned int exception_code);
+                                      unsigned int exception_code);
 
 void modbus_poll(modbus_t *ctx);
 
