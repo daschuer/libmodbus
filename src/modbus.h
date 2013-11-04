@@ -208,6 +208,9 @@ MODBUS_API int modbus_reply(modbus_t *ctx, const uint8_t *req,
 MODBUS_API int modbus_reply_exception(modbus_t *ctx, const uint8_t *req,
                                   unsigned int exception_code);
 
+void modbus_poll(modbus_t *ctx);
+
+
 /**
  * UTILS FUNCTIONS
  **/
@@ -233,6 +236,9 @@ MODBUS_API void modbus_set_float_dcba(float f, uint16_t *dest);
 
 #include "modbus-tcp.h"
 #include "modbus-rtu.h"
+
+void busMonitorAddItem( uint8_t isOut, uint8_t slave, uint8_t func, uint16_t addr, uint16_t nb, uint16_t expectedCRC, uint16_t actualCRC );
+void busMonitorRawData( uint8_t * data, uint8_t dataLen, uint8_t addNewline );
 
 MODBUS_END_DECLS
 

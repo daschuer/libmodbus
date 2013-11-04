@@ -124,6 +124,8 @@ struct _modbus {
     int error_recovery;
     struct timeval response_timeout;
     struct timeval byte_timeout;
+	uint16_t last_crc_expected;
+	uint16_t last_crc_received;
     const modbus_backend_t *backend;
     void *backend_data;
 };

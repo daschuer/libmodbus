@@ -384,6 +384,9 @@ static int _modbus_rtu_check_integrity(modbus_t *ctx, uint8_t *msg,
     crc_calculated = crc16(msg, msg_length - 2);
     crc_received = (msg[msg_length - 2] << 8) | msg[msg_length - 1];
 
+	ctx->last_crc_expected = crc_calculated;
+	ctx->last_crc_received = crc_received;
+
     /* Check CRC of msg */
     if (crc_calculated == crc_received) {
         return msg_length;
