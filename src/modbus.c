@@ -625,17 +625,17 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
 		num_items = rsp_nb_value;
 		switch (function)
 		{
-			case _FC_READ_COILS:
-			case _FC_READ_DISCRETE_INPUTS:
+			case MODBUS_FC_READ_COILS:
+			case MODBUS_FC_READ_DISCRETE_INPUTS:
 				num_items = rsp_nb_value*8;
 				break;
-			case _FC_WRITE_AND_READ_REGISTERS:
-			case _FC_READ_HOLDING_REGISTERS:
-			case _FC_READ_INPUT_REGISTERS:
+			case MODBUS_FC_WRITE_AND_READ_REGISTERS:
+			case MODBUS_FC_READ_HOLDING_REGISTERS:
+			case MODBUS_FC_READ_INPUT_REGISTERS:
 				num_items = rsp_nb_value/2;
 				break;
-			case _FC_WRITE_MULTIPLE_COILS:
-			case _FC_WRITE_MULTIPLE_REGISTERS:
+			case MODBUS_FC_WRITE_MULTIPLE_COILS:
+			case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
 				addr = (rsp[offset + 1] << 8) | rsp[offset + 2];
 				num_items = rsp_nb_value;
 				break;
@@ -1929,13 +1929,9 @@ void modbus_poll(modbus_t* ctx)
 	uint8_t msg[MAX_MESSAGE_LENGTH];
 	uint8_t msg_len = 0;
 
-    struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 500;
-	modbus_set_response_timeout( ctx, &tv );
+	modbus_set_response_timeout( ctx, 0, 500);
 	const int ret = _modbus_receive_msg( ctx, &msg_len, MSG_CONFIRMATION );	/* wait for 0.5 ms */
-	tv.tv_usec = _RESPONSE_TIMEOUT;
-	modbus_set_response_timeout( ctx, &tv );
+	modbus_set_response_timeout( ctx, 0, _RESPONSE_TIMEOUT);
 	if( ( ret < 0 && msg_len > 0 ) || ret >= 0 )
 	{
 		const int o = ctx->backend->header_length;
@@ -1947,33 +1943,33 @@ void modbus_poll(modbus_t* ctx)
 		int isQuery = 1;
 		switch( func )
 		{
-			case _FC_READ_COILS:
-			case _FC_READ_DISCRETE_INPUTS:
+			case MODBUS_FC_READ_COILS:
+			case MODBUS_FC_READ_DISCRETE_INPUTS:
 				if( msg[o+2] == datalen-1 )
 				{
 					isQuery = 0;
 					nb = (datalen-1) * 8;
 				}
 				break;
-			case _FC_READ_HOLDING_REGISTERS:
-			case _FC_READ_INPUT_REGISTERS:
+			case MODBUS_FC_READ_HOLDING_REGISTERS:
+			case MODBUS_FC_READ_INPUT_REGISTERS:
 				if( msg[o+2] == datalen-1 )
 				{
 					isQuery = 0;
 					nb = (datalen-1) / 2;
 				}
 				break;
-			case _FC_WRITE_SINGLE_COIL:
-			case _FC_WRITE_SINGLE_REGISTER:
+			case MODBUS_FC_WRITE_SINGLE_COIL:
+			case MODBUS_FC_WRITE_SINGLE_REGISTER:
 				/* can't decide from message whether it is a query or response */
 				isQuery = 0;
 				nb = 1;
 				addr = ( msg[o+2] << 8 ) | msg[o+3];
 				break;
-			case _FC_REPORT_SLAVE_ID:
+			case MODBUS_FC_REPORT_SLAVE_ID:
 				nb = 0;
-			case _FC_WRITE_MULTIPLE_REGISTERS:
-			case _FC_WRITE_MULTIPLE_COILS:
+			case MODBUS_FC_WRITE_MULTIPLE_REGISTERS:
+			case MODBUS_FC_WRITE_MULTIPLE_COILS:
 			default:
 				/* can't decide from message whether it is a query or response */
 				isQuery = 0;
