@@ -427,8 +427,10 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
         }
 
 		// -- BEGIN QMODBUS MODIFICATION --
-		busMonitorRawData( msg + msg_length, rc, ( step == _STEP_DATA && length_to_read-rc == 0 ) ? 1 : 0 );
-		// -- END QMODBUS MODIFICATION --
+        if (ctx->monitor_raw_data) {
+		    ctx->monitor_raw_data(ctx, msg + msg_length, rc, ( step == _STEP_DATA && length_to_read-rc == 0 ) ? 1 : 0 );
+		    // -- END QMODBUS MODIFICATION --
+        }
 
         /* Display the hex code of each character received */
         if (ctx->debug) {
@@ -525,10 +527,12 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
 
 	// -- BEGIN QMODBUS MODIFICATION --
 	int s_crc = 0; // TODO
-	busMonitorAddItem( 1, req[0], req[1],
+    if (ctx->monitor_add_item) {
+	    ctx->monitor_add_item(ctx, 1, req[0], req[1],
 							( req[2] << 8 ) + req[3],
 							( req[4] << 8 ) + req[5],
 							s_crc, s_crc );
+    }
 	// -- END QMODBUS MODIFICATION --
 
     if (ctx->backend->pre_check_confirmation) {
@@ -642,13 +646,15 @@ static int check_confirmation(modbus_t *ctx, uint8_t *req,
 			default:
 				break;
 		}
-		busMonitorAddItem( 0, rsp[offset-1], rsp[offset+0],
+        if (ctx->monitor_add_item) {
+		    ctx->monitor_add_item(ctx, 0, rsp[offset-1], rsp[offset+0],
 						   addr, num_items,
 							ctx->last_crc_expected,
 							ctx->last_crc_received
 					//		( rsp[offset+req_nb_value+4] << 8 ) |
 					//			rsp[offset+req_nb_value+5]
-);
+            );
+        }
 
         if (req_nb_value == rsp_nb_value) {
             rc = rsp_nb_value;
@@ -1640,6 +1646,9 @@ void _modbus_init_common(modbus_t *ctx)
 
     ctx->byte_timeout.tv_sec = 0;
     ctx->byte_timeout.tv_usec = _BYTE_TIMEOUT;
+
+    ctx->monitor_add_item = NULL;
+    ctx->monitor_raw_data = NULL;
 }
 
 /* Define the slave number */
@@ -1922,7 +1931,17 @@ size_t strlcpy(char *dest, const char *src, size_t dest_size)
 #endif
 
 
+void modbus_register_monitor_add_item_fnc(modbus_t *ctx,
+                                         modbus_monitor_add_item_fnc_t cb) 
+{
+    ctx->monitor_add_item = cb; 
+}
 
+void modbus_register_monitor_raw_data_fnc(modbus_t *ctx,
+                                         modbus_monitor_raw_data_fnc_t cb) 
+{
+    ctx->monitor_raw_data = cb; 
+} 
 
 void modbus_poll(modbus_t* ctx)
 {
@@ -1980,7 +1999,8 @@ void modbus_poll(modbus_t* ctx)
 			addr = ( msg[o+2] << 8 ) | msg[o+3];
 			nb = ( msg[o+4] << 8 ) | msg[o+5];
 		}
-		busMonitorAddItem( isQuery,				/* is query */
+        if (ctx->monitor_add_item) {
+		    ctx->monitor_add_item(ctx, isQuery,				/* is query */
 					slave,				/* slave */
 					func,				/* func */
 					addr,				/* addr */
@@ -1989,6 +2009,7 @@ void modbus_poll(modbus_t* ctx)
 					ctx->last_crc_received
 					//( msg[msg_len-2] << 8 ) | msg[msg_len-1]	/* CRC */
 				);
+        }
 	}
 }
 
