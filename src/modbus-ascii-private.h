@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MODBUS_RTU_PRIVATE_H
-#define MODBUS_RTU_PRIVATE_H
+#ifndef _MODBUS_ASCII_PRIVATE_H_
+#define _MODBUS_ASCII_PRIVATE_H_
 
 #ifndef _MSC_VER
 #include <stdint.h>
@@ -31,15 +31,11 @@
 #include <termios.h>
 #endif
 
-#define _MODBUS_RTU_HEADER_LENGTH      1
-#define _MODBUS_RTU_PRESET_REQ_LENGTH  6
-#define _MODBUS_RTU_PRESET_RSP_LENGTH  2
+#define _MODBUS_ASCII_HEADER_LENGTH      2
+#define _MODBUS_ASCII_PRESET_REQ_LENGTH  7
+#define _MODBUS_ASCII_PRESET_RSP_LENGTH  2
 
-#define _MODBUS_RTU_CHECKSUM_LENGTH    2
-
-/* Time waited beetween the RTS switch before transmit data or after transmit
-   data before to read */
-#define _MODBUS_RTU_TIME_BETWEEN_RTS_SWITCH 10000
+#define _MODBUS_ASCII_CHECKSUM_LENGTH    3 /* lcr8 + \r\n */
 
 #if defined(_WIN32)
 #if !defined(ENOTSUP)
@@ -85,6 +81,6 @@ typedef struct _modbus_rtu {
 #endif
     /* To handle many slaves on the same link */
     int confirmation_to_ignore;
-} modbus_rtu_t;
+} modbus_ascii_t;
 
-#endif /* MODBUS_RTU_PRIVATE_H */
+#endif /* _MODBUS_RTU_PRIVATE_H_ */

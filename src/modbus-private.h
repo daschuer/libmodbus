@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _MODBUS_PRIVATE_H_
-#define _MODBUS_PRIVATE_H_
+#ifndef MODBUS_PRIVATE_H
+#define MODBUS_PRIVATE_H
 
 #ifndef _MSC_VER
 # include <stdint.h>
@@ -53,7 +53,8 @@ MODBUS_BEGIN_DECLS
 
 typedef enum {
     _MODBUS_BACKEND_TYPE_RTU=0,
-    _MODBUS_BACKEND_TYPE_TCP
+    _MODBUS_BACKEND_TYPE_TCP, 
+    _MODBUS_BACKEND_TYPE_ASCII
 } modbus_backend_type_t;
 
 /*
@@ -128,4 +129,4 @@ size_t strlcpy(char *dest, const char *src, size_t dest_size);
 
 MODBUS_END_DECLS
 
-#endif  /* _MODBUS_PRIVATE_H_ */
+#endif  /* MODBUS_PRIVATE_H */
