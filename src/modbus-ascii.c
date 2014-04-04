@@ -338,7 +338,7 @@ static int _modbus_ascii_flush(modbus_t *);
 static int _modbus_ascii_pre_check_confirmation(modbus_t *ctx, const uint8_t *req,
                                               const uint8_t *rsp, int rsp_length)
 {
-    /* Check responding slave is the slave we requested (except for broacast
+    /* Check responding slave is the slave we requested (except for broadcast
      * request) */
     if (req[1] != rsp[1] && req[1] != MODBUS_BROADCAST_ADDRESS) {
         if (ctx->debug) {
