@@ -40,6 +40,7 @@
 # define close closesocket
 #define ENOTCONN WSAENOTCONN
 #else
+#define __USE_GNU
 # include <sys/socket.h>
 # include <sys/ioctl.h>
 
