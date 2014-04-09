@@ -777,6 +777,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                         "Illegal nb of values %d in read_bits (max %d)\n",
                         nb, MODBUS_MAX_READ_BITS);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
@@ -808,6 +810,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                         "Illegal nb of values %d in read_input_bits (max %d)\n",
                         nb, MODBUS_MAX_READ_BITS);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
@@ -837,6 +841,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                         "Illegal nb of values %d in read_holding_registers (max %d)\n",
                         nb, MODBUS_MAX_READ_REGISTERS);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
@@ -871,6 +877,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                         "Illegal number of values %d in read_input_registers (max %d)\n",
                         nb, MODBUS_MAX_READ_REGISTERS);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
@@ -901,6 +909,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                         "Illegal data address %0X in write_bit\n",
                         address);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS, rsp);
@@ -929,6 +939,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                 fprintf(stderr, "Illegal data address %0X in write_register\n",
                         address);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS, rsp);
@@ -943,7 +955,21 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
     case MODBUS_FC_WRITE_MULTIPLE_COILS: {
         int nb = (req[offset + 3] << 8) + req[offset + 4];
 
-        if ((address + nb) > mb_mapping->nb_bits) {
+        if (nb < 1 || MODBUS_MAX_WRITE_BITS < nb) {
+            if (ctx->debug) {
+                fprintf(stderr,
+                        "Illegal number of values %d in write_bits (max %d)\n",
+                        nb, MODBUS_MAX_WRITE_BITS);
+            }
+            /* May be the indication has been truncated on reading because of
+             * invalid address (eg. nb is 0 but the request contains values to
+             * write) so it's necessary to flush. */
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
+            rsp_length = response_exception(
+                ctx, &sft,
+                MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
+        } else if ((address + nb) > mb_mapping->nb_bits) {
             if (ctx->debug) {
                 fprintf(stderr, "Illegal data address %0X in write_bits\n",
                         address + nb);
@@ -964,8 +990,21 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
         break;
     case MODBUS_FC_WRITE_MULTIPLE_REGISTERS: {
         int nb = (req[offset + 3] << 8) + req[offset + 4];
-
-        if ((address + nb) > mb_mapping->nb_registers) {
+        if (nb < 1 || MODBUS_MAX_WRITE_REGISTERS < nb) {
+            if (ctx->debug) {
+                fprintf(stderr,
+                        "Illegal number of values %d in write_registers (max %d)\n",
+                        nb, MODBUS_MAX_WRITE_REGISTERS);
+            }
+            /* May be the indication has been truncated on reading because of
+             * invalid address (eg. nb is 0 but the request contains values to
+             * write) so it's necessary to flush. */
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
+            rsp_length = response_exception(
+                ctx, &sft,
+                MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
+        } else if ((address + nb) > mb_mapping->nb_registers) {
             if (ctx->debug) {
                 fprintf(stderr, "Illegal data address %0X in write_registers\n",
                         address + nb);
@@ -1047,6 +1086,8 @@ int modbus_reply(modbus_t *ctx, const uint8_t *req,
                         nb_write, nb,
                         MODBUS_MAX_WR_WRITE_REGISTERS, MODBUS_MAX_WR_READ_REGISTERS);
             }
+            _sleep_response_timeout(ctx);
+            modbus_flush(ctx);
             rsp_length = response_exception(
                 ctx, &sft,
                 MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp);
@@ -1599,13 +1640,13 @@ int modbus_write_and_read_registers(modbus_t *ctx,
 
 /* Send a request to get the slave ID of the device (only available in serial
    communication). */
-int modbus_report_slave_id(modbus_t *ctx, uint8_t *dest)
+int modbus_report_slave_id(modbus_t *ctx, int max_dest, uint8_t *dest)
 {
     int rc;
     int req_length;
     uint8_t req[_MIN_REQ_LENGTH];
 
-    if (ctx == NULL) {
+    if (ctx == NULL || max_dest <= 0) {
         errno = EINVAL;
         return -1;
     }
@@ -1632,9 +1673,9 @@ int modbus_report_slave_id(modbus_t *ctx, uint8_t *dest)
 
         offset = ctx->backend->header_length + 2;
 
-        /* Byte count, slave id, run indicator status,
-           additional data */
-        for (i=0; i < rc; i++) {
+        /* Byte count, slave id, run indicator status and
+           additional data. Truncate copy to max_dest. */
+        for (i=0; i < rc && i < max_dest; i++) {
             dest[i] = rsp[offset + i];
         }
     }
